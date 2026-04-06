@@ -6,6 +6,11 @@
 
 ## v1.0.0 (2026-04-06)
 
+### commit bb8296c - fix(deploy): 修复Docker构建错误
+- 将 npm ci 改为 npm install (无需package-lock.json)
+- 修复docker-compose中的容器名称
+- 移除server对nginx的循环依赖
+
 ### commit b09bc39 - feat: 添加一键部署脚本
 - 创建 deploy.sh 一键部署脚本
 - 支持安装/更新/卸载/状态检查
