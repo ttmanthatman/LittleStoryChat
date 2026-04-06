@@ -6,6 +6,14 @@
 
 ## v1.0.0 (2026-04-06)
 
+### commit b09bc39 - feat: 添加一键部署脚本
+- 创建 deploy.sh 一键部署脚本
+- 支持安装/更新/卸载/状态检查
+- 自动检测并安装依赖 (Docker, Nginx, Node.js)
+- 集成 SSL 证书配置
+- 防火墙自动配置
+- 项目文档完善 (PROJECT_PLAN/PROGRESS/CHANGELOG)
+
 ### commit ee42fa6 - feat: 项目更名为 LittleStoryChat，添加详细部署文档
 - 界面标题改为"故事小站"
 - 更新favicon设计
