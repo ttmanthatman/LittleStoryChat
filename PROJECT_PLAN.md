@@ -1,15 +1,22 @@
-# 在线聊天室项目规划
+# 故事小站 (LittleStoryChat) - 项目架构
 
-## 一、项目概述
-
-**项目名称**: 嗨聊 (HiChat)
-**项目类型**: 实时在线聊天室 (全栈Web应用)
-**核心功能**: 群聊、私信、通知、接龙游戏、置顶通告、消息回复
-**目标用户**: 需要团队协作沟通、社区交流的用户群体
+> 最后更新: 2026-04-06
 
 ---
 
-## 二、技术架构
+## 一、项目概述
+
+| 项目 | 信息 |
+|------|------|
+| **项目名称** | 故事小站 (LittleStoryChat) |
+| **项目类型** | 实时在线聊天室 (全栈Web应用) |
+| **核心功能** | 群聊、私信、通知、接龙游戏、置顶通告、消息回复 |
+| **目标用户** | 社区交流、团队协作 |
+| **部署域名** | https://2.xiaogushi.us |
+
+---
+
+## 二、技术栈
 
 ### 前端技术栈
 | 技术 | 版本 | 用途 |
@@ -29,244 +36,154 @@
 | Node.js | 20.x LTS | 运行时 |
 | Express | 4.x | Web框架 |
 | Socket.IO | 4.x | WebSocket服务 |
-| SQLite | - | 轻量级数据库 |
-| JWT | - | 用户认证 |
-| bcrypt | - | 密码加密 |
-| CORS | - | 跨域支持 |
-
-### 部署架构
-```
-用户浏览器 ←→ Nginx (反向代理) ←→ Node.js 服务 (端口3001)
-                                            ↓
-                                      SQLite 数据库
-```
+| better-sqlite3 | 9.x | SQLite数据库 |
+| jsonwebtoken | 9.x | JWT认证 |
+| bcryptjs | 2.x | 密码加密 |
 
 ---
 
-## 三、功能模块
+## 三、端口与配置约定
 
-### 3.1 用户系统
-- [x] 用户注册 (用户名、密码)
-- [x] 用户登录 (JWT Token)
-- [x] 用户列表展示
-- [x] 在线状态显示
-- [x] 最后活跃时间
+### 服务端口
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Node.js 后端 | 3001 | API + WebSocket |
+| Nginx | 80/443 | 反向代理 |
+| 前端开发 | 5173 | Vite Dev Server |
 
-### 3.2 群聊功能
-- [x] 公共聊天室消息
-- [x] 消息实时推送
-- [x] 消息时间戳
-- [x] 消息分页加载
-- [x] 新消息滚动到底部
+### 环境变量
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `PORT` | 3001 | 服务器端口 |
+| `NODE_ENV` | production | 运行环境 |
+| `JWT_SECRET` | - | JWT密钥 (必填) |
+| `CORS_ORIGIN` | https://2.xiaogushi.us | 允许的源 |
+| `DB_PATH` | ./data/hichat.db | 数据库路径 |
 
-### 3.3 私信功能
-- [x] 用户间一对一聊天
-- [x] 私信列表
-- [x] 未读消息标记
-- [x] 私信历史记录
-
-### 3.4 通知系统
-- [x] 系统通知推送
-- [x] 通知类型 (上线、下线、公告)
-- [x] 通知中心
-- [x] 未读通知计数
-
-### 3.5 接龙功能
-- [x] 创建接龙活动
-- [x] 参与接龙
-- [x] 接龙链展示
-- [x] 接龙统计
-- [x] 接龙状态管理
-
-### 3.6 置顶通告
-- [x] 管理员发布通告
-- [x] 通告置顶显示
-- [x] 通告过期机制
-- [x] 通告编辑/删除
-
-### 3.7 回复功能
-- [x] 对消息进行回复
-- [x] 回复引用显示
-- [x] 回复通知
+### API 基础路径
+- REST API: `/api/*`
+- WebSocket: `/socket.io`
+- 健康检查: `/health`
 
 ---
 
 ## 四、数据库设计
 
-### 用户表 (users)
+### 数据表结构
 ```
-id: INTEGER PRIMARY KEY
-username: TEXT UNIQUE
-password: TEXT (加密)
-avatar: TEXT (可选)
-created_at: DATETIME
-last_seen: DATETIME
-is_online: BOOLEAN
-```
-
-### 消息表 (messages)
-```
-id: INTEGER PRIMARY KEY
-user_id: INTEGER (FK)
-content: TEXT
-type: TEXT (normal/reply/system)
-reply_to: INTEGER (FK, 可选)
-created_at: DATETIME
+users              - 用户表
+messages           - 群聊消息表
+private_messages   - 私信表
+word_chains       - 接龙表
+chain_entries     - 接龙记录表
+announcements     - 通告表
+notifications     - 通知表
 ```
 
-### 私信表 (private_messages)
-```
-id: INTEGER PRIMARY KEY
-sender_id: INTEGER (FK)
-receiver_id: INTEGER (FK)
-content: TEXT
-is_read: BOOLEAN
-created_at: DATETIME
-```
+### 数据库位置
+- 开发环境: `server/data/hichat.db`
+- Docker: `/app/data/hichat.db` (持久化卷)
 
-### 接龙表 (word_chains)
-```
-id: INTEGER PRIMARY KEY
-creator_id: INTEGER (FK)
-title: TEXT
-current_word: TEXT
-is_active: BOOLEAN
-created_at: DATETIME
-ended_at: DATETIME
-```
+---
 
-### 接龙记录表 (chain_entries)
-```
-id: INTEGER PRIMARY KEY
-chain_id: INTEGER (FK)
-user_id: INTEGER (FK)
-word: TEXT
-created_at: DATETIME
-```
+## 五、项目目录结构
 
-### 通告表 (announcements)
 ```
-id: INTEGER PRIMARY KEY
-content: TEXT
-priority: INTEGER
-is_active: BOOLEAN
-expires_at: DATETIME
-created_by: INTEGER (FK)
-created_at: DATETIME
+LittleStoryChat/
+├── client/                     # Vue 3 前端
+│   ├── src/
+│   │   ├── components/         # Vue组件
+│   │   │   ├── ChatRoom.vue        # 聊天室
+│   │   │   ├── MessageBubble.vue   # 消息气泡
+│   │   │   ├── PrivateChat.vue     # 私信
+│   │   │   ├── ChainRoom.vue       # 接龙
+│   │   │   └── AnnouncementPanel.vue  # 通告
+│   │   ├── views/              # 页面视图
+│   │   │   ├── LoginView.vue
+│   │   │   ├── RegisterView.vue
+│   │   │   └── ChatView.vue
+│   │   ├── stores/             # Pinia状态
+│   │   │   └── auth.ts
+│   │   ├── composables/        # 组合式函数
+│   │   │   ├── useApi.ts
+│   │   │   └── useSocket.ts
+│   │   └── router/
+│   ├── public/
+│   │   └── favicon.svg
+│   └── package.json
+├── server/                     # Node.js 后端
+│   ├── src/
+│   │   ├── routes/             # API路由
+│   │   │   ├── auth.js
+│   │   │   ├── users.js
+│   │   │   ├── messages.js
+│   │   │   ├── chains.js
+│   │   │   └── announcements.js
+│   │   ├── middleware/
+│   │   │   └── auth.js
+│   │   ├── socket/
+│   │   │   └── handlers.js
+│   │   ├── db/
+│   │   │   └── init.js
+│   │   └── index.js
+│   └── package.json
+├── nginx/                      # Nginx配置
+│   ├── nginx.conf
+│   └── conf.d/
+│       └── default.conf
+├── docker-compose.yml
+├── .env.example
+├── README.md
+├── DEPLOYMENT.md
+├── PROGRESS.md
+└── CHANGELOG.md
 ```
 
 ---
 
-## 五、API 接口设计
+## 六、部署架构
 
-### REST API
-| 方法 | 路径 | 功能 |
-|------|------|------|
-| POST | /api/auth/register | 用户注册 |
-| POST | /api/auth/login | 用户登录 |
-| GET | /api/users | 获取用户列表 |
-| GET | /api/users/:id | 获取用户信息 |
-| GET | /api/messages | 获取历史消息 |
-| GET | /api/private/:userId | 获取私信记录 |
-| GET | /api/chains | 获取接龙列表 |
-| POST | /api/chains | 创建接龙 |
-| GET | /api/announcements | 获取通告 |
-
-### WebSocket 事件
-| 事件名 | 方向 | 功能 |
-|--------|------|------|
-| join | Client→Server | 用户加入 |
-| leave | Client→Server | 用户离开 |
-| message | Client↔Server | 发送消息 |
-| private | Client↔Server | 发送私信 |
-| typing | Client↔Server | 正在输入 |
-| notification | Server→Client | 推送通知 |
-| online_users | Server→Client | 在线用户列表 |
-| chain_update | Server→Client | 接龙更新 |
-| announcement | Server→Client | 通告更新 |
-
----
-
-## 六、界面设计
-
-### 页面结构
-1. **登录/注册页** - 用户认证入口
-2. **主聊天室** - 包含：
-   - 左侧：用户列表 + 接龙列表
-   - 中间：消息区域 + 通告栏
-   - 右侧：快捷操作 + 通知中心
-
-### 配色方案
-- 主色: `#6366f1` (Indigo)
-- 次色: `#8b5cf6` (Purple)
-- 背景: `#0f172a` (深蓝灰)
-- 文字: `#e2e8f0` (浅灰白)
-- 强调: `#22d3ee` (青色)
-
-### 响应式设计
-- 桌面端: 三栏布局
-- 平板: 两栏布局 (侧边栏可折叠)
-- 移动端: 单栏 + 底部导航
-
----
-
-## 七、部署方案
-
-### 部署流程
-1. 本地开发测试
-2. 构建生产版本
-3. 通过SSH上传到VPS
-4. 配置Nginx反向代理
-5. 配置Systemd服务
-6. 启动并验证
-
-### VPS配置
-- 域名: `2.xiaogushi.us`
-- 端口: 3001 (Node.js服务)
-- Nginx: 80/443端口监听
-
-### 目录结构
 ```
-/var/www/hichat/
-├── server/          # 后端代码
-│   ├── index.js
-│   ├── package.json
-│   └── data/        # SQLite数据库
-├── dist/            # 前端构建文件
-└── .env             # 环境配置
+用户浏览器 (HTTPS)
+       ↓
+    Nginx (443)
+       ↓
+   ┌───────┐
+   │ Proxy │ ← /api → Node.js:3001
+   │       │ ← /socket.io → Node.js:3001
+   │       │ ← / → 静态文件
+   └───────┘
+       ↓
+  Node.js Server
+       ↓
+   SQLite DB
 ```
 
 ---
 
-## 八、开发时间估算
+## 七、安全约定
 
-| 阶段 | 内容 | 预计时间 |
-|------|------|----------|
-| Phase 1 | 项目初始化 + 后端基础 | 30分钟 |
-| Phase 2 | 用户认证系统 | 30分钟 |
-| Phase 3 | 群聊功能 | 45分钟 |
-| Phase 4 | 私信功能 | 30分钟 |
-| Phase 5 | 接龙功能 | 45分钟 |
-| Phase 6 | 通告 + 通知 | 30分钟 |
-| Phase 7 | 前端美化 + 响应式 | 30分钟 |
-| Phase 8 | 部署 + 调试 | 30分钟 |
-| **总计** | | **约4小时** |
+1. **密码**: 使用 bcryptjs 加密存储
+2. **认证**: JWT Token (7天有效期)
+3. **CORS**: 仅允许配置的域名
+4. **WebSocket**: 需携带有效 JWT Token
+5. **管理员**: 数据库 `is_admin` 字段控制
 
 ---
 
-## 九、风险与注意事项
+## 八、Git 工作流
 
-1. **不影响现有服务**: 仅使用3001端口，不修改Nginx其他配置
-2. **数据安全**: 密码加密存储
-3. **性能优化**: 消息分页、连接复用
-4. **错误处理**: 完善的异常捕获
+- **远程仓库**: git@github.com:ttmanthatman/LittleStoryChat.git
+- **分支策略**: main (主分支)
+- **提交规范**: feat/fix/docs/chore
 
 ---
 
-## 十、下一步行动
+## 九、相关文档
 
-请确认此规划，我将开始实施开发：
-1. 初始化项目结构
-2. 开发后端服务
-3. 开发前端应用
-4. 部署到VPS
+| 文档 | 用途 |
+|------|------|
+| README.md | 项目说明|
+| DEPLOYMENT.md | 详细部署指南 |
+| PROGRESS.md | 开发进度跟踪 |
+| CHANGELOG.md | 变更记录 |
