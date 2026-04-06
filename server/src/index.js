@@ -52,7 +52,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 
 httpServer.listen(PORT, () => {
-  console.log(`🚀 HiChat Server running on port ${PORT}`);
+  console.log(`🚀 LittleStoryChat Server running on port ${PORT}`);
   console.log(`📡 WebSocket ready`);
 });
 

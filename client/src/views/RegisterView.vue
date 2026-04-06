@@ -5,8 +5,8 @@
         <div class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <MessageCircle class="w-8 h-8 text-white" />
         </div>
-        <h1 class="text-2xl font-bold text-white">嗨聊</h1>
-        <p class="text-gray-400 mt-2">创建你的账号</p>
+        <h1 class="text-2xl font-bold text-white">故事小站</h1>
+        <p class="text-gray-400 mt-2">Create Your Account</p>
       </div>
 
       <form @submit.prevent="handleRegister" class="space-y-4">

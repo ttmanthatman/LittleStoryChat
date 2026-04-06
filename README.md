@@ -1,4 +1,4 @@
-# 嗨聊 (HiChat) - 在线聊天室
+# 故事小站 (LittleStoryChat) - 在线聊天室
 
 一个现代化的实时在线聊天室，支持群聊、私信、接龙游戏、通告通知等功能。
 
@@ -115,7 +115,7 @@ docker-compose up -d
 ## 目录结构
 
 ```
-hichat/
+LittleStoryChat/
 ├── client/                 # 前端
 │   ├── src/
 │   │   ├── components/     # Vue组件

@@ -1,7 +1,7 @@
 {
-  "name": "hichat-server",
+  "name": "littlestorychat-server",
   "version": "1.0.0",
-  "description": "HiChat - Real-time Chat Server",
+  "description": "LittleStoryChat - Real-time Chat Server",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
