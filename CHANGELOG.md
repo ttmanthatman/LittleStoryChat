@@ -6,6 +6,13 @@
 
 ## v1.0.0 (2026-04-06)
 
+### commit xxx - feat(deploy): 增强SSL证书管理功能
+- 添加独立 `./deploy.sh ssl` 命令申请证书
+- 添加 `./deploy.sh ssl-status` 查看证书状态和有效期
+- 添加 `./deploy.sh ssl-renew` 手动续期证书
+- 显示证书详细信息 (到期日期、剩余天数)
+- 自动设置 Let's Encrypt 续期定时器
+
 ### commit bb8296c - fix(deploy): 修复Docker构建错误
 - 将 npm ci 改为 npm install (无需package-lock.json)
 - 修复docker-compose中的容器名称

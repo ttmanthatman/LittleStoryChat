@@ -439,19 +439,116 @@ EOF
 setup_ssl() {
     log_info "配置 SSL 证书..."
     
+    # 检查 Nginx 是否运行
+    if ! systemctl is-active nginx &> /dev/null; then
+        log_info "启动 Nginx..."
+        systemctl start nginx
+    fi
+    
     # 检查 certbot 是否安装
     if ! command -v certbot &> /dev/null; then
+        log_info "安装 Certbot..."
+        apt update
         apt install -y certbot python3-certbot-nginx
     fi
     
-    # 获取证书
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m admin@"$DOMAIN"
+    # 申请证书
+    log_info "申请 SSL 证书 (域名: $DOMAIN)..."
+    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m admin@"$DOMAIN" --redirect
     
-    # 自动续期
+    # 设置自动续期
+    log_info "设置自动续期..."
     systemctl enable certbot.timer
     systemctl start certbot.timer
     
-    log_success "SSL 证书配置完成"
+    # 验证续期定时器
+    systemctl status certbot.timer --no-pager || true
+    
+    log_success "SSL 证书配置完成!"
+    echo ""
+    log_info "证书信息:"
+    log_info "  证书路径: /etc/letsencrypt/live/$DOMAIN/"
+    log_info "  续期命令: ./deploy.sh ssl-renew"
+    log_info "  自动续期: 已启用 (每天检查)"
+}
+
+# 检查 SSL 证书状态
+check_ssl_status() {
+    echo ""
+    echo -e "${CYAN}═══════════ SSL 证书状态 ═══════════${NC}"
+    echo ""
+    
+    CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
+    
+    if [[ -d "$CERT_DIR" ]]; then
+        log_success "证书已存在"
+        
+        # 显示证书信息
+        echo ""
+        log_info "证书详情:"
+        openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -dates -subject 2>/dev/null | while read line; do
+            echo "  $line"
+        done
+        
+        # 检查有效期
+        EXPIRY_DATE=$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -enddate 2>/dev/null | cut -d= -f2)
+        EXPIRY_EPOCH=$(date -d "$EXPIRY_DATE" +%s 2>/dev/null || date -j -f "%b %d %T %Y %Z" "$EXPIRY_DATE" +%s 2>/dev/null)
+        NOW_EPOCH=$(date +%s)
+        DAYS_LEFT=$(( (EXPIRY_EPOCH - NOW_EPOCH) / 86400 ))
+        
+        echo ""
+        if [[ $DAYS_LEFT -lt 30 ]]; then
+            log_warn "证书将在 $DAYS_LEFT 天后过期，请及时续期"
+        else
+            log_success "证书有效期还剩 $DAYS_LEFT 天"
+        fi
+        
+        # 检查自动续期
+        echo ""
+        log_info "自动续期状态:"
+        systemctl is-active certbot.timer &> /dev/null && log_success "定时器运行中" || log_error "定时器未运行"
+        
+    else
+        log_error "证书不存在"
+        echo ""
+        log_info "运行以下命令申请证书:"
+        echo "  ./deploy.sh ssl"
+        return 1
+    fi
+    
+    echo ""
+}
+
+# 手动续期 SSL 证书
+renew_ssl() {
+    print_banner
+    
+    log_info "续期 SSL 证书..."
+    
+    CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
+    
+    if [[ ! -d "$CERT_DIR" ]]; then
+        log_error "证书不存在，请先运行: ./deploy.sh ssl"
+        exit 1
+    fi
+    
+    # 停止 Nginx (certbot 需要)
+    log_info "停止 Nginx..."
+    systemctl stop nginx
+    
+    # 续期
+    log_info "执行续期..."
+    certbot renew --pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx" --dry-run || true
+    
+    echo ""
+    read -p "是否执行实际续期? (y/N): " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        certbot renew --pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx"
+        log_success "证书续期完成!"
+        check_ssl_status
+    else
+        log_info "已取消"
+    fi
 }
 
 # 防火墙配置
@@ -716,19 +813,24 @@ show_help() {
     echo "用法: $0 <命令>"
     echo ""
     echo "命令:"
-    echo "  install安装故事小站"
-    echo "  update      更新故事小站"
-    echo "  uninstall   卸载故事小站"
-    echo "  status      查看状态"
-    echo "  logs        查看日志 (加 -f 实时)"
-    echo "  restart     重启服务"
-    echo "  stop        停止服务"
-    echo "  help        显示帮助"
+    echo "  install        安装故事小站"
+    echo "  update         更新故事小站"
+    echo "  uninstall     卸载故事小站"
+    echo "  status        查看状态"
+    echo "  logs          查看日志 (加 -f 实时)"
+    echo "  restart        重启服务"
+    echo "  stop           停止服务"
+    echo "  ssl            申请/配置 SSL 证书"
+    echo "  ssl-status     查看 SSL 证书状态"
+    echo "  ssl-renew      手动续期 SSL 证书"
+    echo "  help           显示帮助"
     echo ""
     echo "示例:"
     echo "  $0 install        # 安装"
     echo "  $0 status         # 查看状态"
-    echo "  $0 logs -f        # 实时日志"
+    echo "  $0 ssl            # 配置SSL证书"
+    echo "  $0 ssl-status     # 查看证书状态"
+    echo "  $0 ssl-renew      # 续期证书"
     echo ""
 }
 
@@ -763,6 +865,17 @@ case "$COMMAND" in
     stop)
         check_root
         do_stop
+        ;;
+    ssl)
+        check_root
+        setup_ssl
+        ;;
+    ssl-status)
+        check_ssl_status
+        ;;
+    ssl-renew)
+        check_root
+        renew_ssl
         ;;
     help|--help|-h)
         show_help
