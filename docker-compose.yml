@@ -6,7 +6,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: hichat-server
+    container_name: littlestorychat-server
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -20,13 +20,11 @@ services:
       - server-data:/app/data
     networks:
       - hichat-network
-    depends_on:
-      - nginx
 
   # Nginx 反向代理
   nginx:
     image: nginx:alpine
-    container_name: hichat-nginx
+    container_name: littlestorychat-nginx
     restart: unless-stopped
     ports:
       - "80:80"
